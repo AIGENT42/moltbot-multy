@@ -54,7 +54,7 @@ Usage:
 Options for 'create':
   --gateway-port PORT    Gateway port (default: auto-assigned)
   --bridge-port PORT     Bridge port (default: auto-assigned)
-  --config-dir DIR       Config directory (default: ~/.clawdbot-<instance>)
+  --config-dir DIR       Config directory (default: ~/.moltbot-<instance>)
   --workspace-dir DIR    Workspace directory (default: ~/clawd-<instance>)
   --no-onboard           Skip interactive onboarding
 
@@ -200,7 +200,7 @@ cmd_create() {
   [[ -z "$bridge_port" ]] && bridge_port=$(find_next_available_port "$DEFAULT_BASE_BRIDGE_PORT" "BRIDGE")
 
   # Set default directories
-  [[ -z "$config_dir" ]] && config_dir="$HOME/.clawdbot-${instance}"
+  [[ -z "$config_dir" ]] && config_dir="$HOME/.moltbot-${instance}"
   [[ -z "$workspace_dir" ]] && workspace_dir="$HOME/clawd-${instance}"
 
   # Generate token

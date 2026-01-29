@@ -15,7 +15,7 @@ services:
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
       CLAWDBOT_INSTANCE: ${INSTANCE:-default}
     volumes:
-      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
+      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.moltbot
       - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd
     ports:
       - "${CLAWDBOT_GATEWAY_PORT:-18789}:${CLAWDBOT_INTERNAL_GATEWAY_PORT:-18789}"
@@ -30,7 +30,8 @@ services:
         "--bind",
         "${CLAWDBOT_GATEWAY_BIND:-lan}",
         "--port",
-        "${CLAWDBOT_INTERNAL_GATEWAY_PORT:-18789}"
+        "${CLAWDBOT_INTERNAL_GATEWAY_PORT:-18789}",
+        "--allow-unconfigured"
       ]
 
   moltbot-cli:
@@ -45,7 +46,7 @@ services:
       CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE}
       CLAWDBOT_INSTANCE: ${INSTANCE:-default}
     volumes:
-      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.clawdbot
+      - ${CLAWDBOT_CONFIG_DIR}:/home/node/.moltbot
       - ${CLAWDBOT_WORKSPACE_DIR}:/home/node/clawd
     stdin_open: true
     tty: true
