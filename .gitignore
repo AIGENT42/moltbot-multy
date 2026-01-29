@@ -74,3 +74,5 @@ USER.md
 
 # Multi-instance Docker config
 .instances/
+instances.yaml
+docker-compose.generated.yml

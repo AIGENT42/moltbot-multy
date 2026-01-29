@@ -321,6 +321,122 @@ For automated deployments, skip interactive onboarding:
 ./docker-multi-setup.sh onboard bot1  # Run later if needed
 ```
 
+## Bulk Instance Management (100-1000+ instances)
+
+For large-scale deployments, use the bulk management tools.
+
+### Quick bulk create (no config file)
+
+```bash
+# Create 1000 instances: user-1 through user-1000
+./docker-multi-bulk.sh create-range user 1 1000 --gateway-start 19000
+
+# Start all instances (10 parallel by default)
+./docker-multi-bulk.sh up --parallel 50
+
+# Check status
+./docker-multi-bulk.sh status
+
+# Stop all
+./docker-multi-bulk.sh down --parallel 50
+```
+
+### YAML-based configuration
+
+For more control, use a YAML config file:
+
+```bash
+cp instances.example.yaml instances.yaml
+# Edit instances.yaml
+./docker-multi-bulk.sh generate
+./docker-multi-bulk.sh up
+```
+
+Example `instances.yaml`:
+
+```yaml
+defaults:
+  config_base: /data/moltbot/config
+  workspace_base: /data/moltbot/workspace
+  ports:
+    gateway_start: 18789
+    bridge_start: 28789
+  resources:
+    memory: 512m
+    cpus: 0.5
+    pids_limit: 100
+
+instances:
+  # Individual instances
+  - name: admin
+    gateway_port: 18789
+    resources:
+      memory: 1g
+      cpus: 1
+
+  # Bulk range: creates user-001 through user-500
+  - pattern: "user-{n:03d}"
+    range: [1, 500]
+    gateway_port_start: 19000
+    bridge_port_start: 29000
+
+  # Another range: bot-501 through bot-1000
+  - pattern: "bot-{n}"
+    range: [501, 1000]
+    gateway_port_start: 19500
+    bridge_port_start: 29500
+```
+
+### Resource limits
+
+Each container can have resource limits:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `memory` | 512m | Memory limit |
+| `memory_swap` | 1g | Memory + swap limit |
+| `cpus` | 0.5 | CPU cores |
+| `pids_limit` | 100 | Max processes |
+
+### Export for Kubernetes/Swarm
+
+Generate a single docker-compose file for external orchestration:
+
+```bash
+./docker-multi-bulk.sh export > docker-compose.production.yml
+
+# Use with Docker Swarm
+docker stack deploy -c docker-compose.production.yml moltbot
+```
+
+### Scaling recommendations
+
+| Instances | RAM (host) | CPUs | Disk |
+|-----------|------------|------|------|
+| 10 | 8 GB | 4 | 50 GB |
+| 100 | 64 GB | 16 | 200 GB |
+| 500 | 256 GB | 64 | 1 TB |
+| 1000 | 512 GB | 128 | 2 TB |
+
+Tips for large deployments:
+- Use `--parallel 50` or higher for faster startup
+- Store config/workspace on fast SSD or network storage
+- Monitor with `./docker-multi-bulk.sh status --json | jq`
+- Consider Kubernetes for 1000+ instances with auto-scaling
+
+### Filtering operations
+
+```bash
+# Start only user-* instances
+./docker-multi-bulk.sh up --filter "user-*"
+
+# Stop only bot-* instances
+./docker-multi-bulk.sh down --filter "bot-*"
+
+# Status for specific pattern
+./docker-multi-bulk.sh status --filter "user-00*"
+```
+
 ## Agent Sandbox (host gateway + Docker tools)
 
 Deep dive: [Sandboxing](/gateway/sandboxing)

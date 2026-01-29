@@ -1,0 +1,69 @@
+# Multi-instance configuration for Moltbot
+# Copy this file to instances.yaml and customize
+#
+# Usage:
+#   ./docker-multi-bulk.sh generate   # Generate from this config
+#   ./docker-multi-bulk.sh up         # Start all instances
+#   ./docker-multi-bulk.sh down       # Stop all instances
+#   ./docker-multi-bulk.sh status     # Show all instance status
+
+# Global defaults (can be overridden per instance)
+defaults:
+  # Base directories - instance name appended automatically
+  config_base: /data/moltbot/config
+  workspace_base: /data/moltbot/workspace
+
+  # Port allocation strategy
+  ports:
+    gateway_start: 18789
+    bridge_start: 28789
+
+  # Resource limits per container
+  resources:
+    memory: 512m
+    memory_swap: 1g
+    cpus: 0.5
+    pids_limit: 100
+
+  # Docker settings
+  docker:
+    image: moltbot:local
+    network: moltbot-network
+    restart: unless-stopped
+
+# Instance definitions
+# For bulk creation, use ranges or lists
+instances:
+  # Individual instances with custom settings
+  - name: admin
+    gateway_port: 18789
+    bridge_port: 28789
+    resources:
+      memory: 1g
+      cpus: 1
+
+  - name: premium-user-1
+    gateway_port: 18790
+    bridge_port: 28790
+
+  # Bulk instances using range pattern
+  # Creates: user-001, user-002, ... user-100
+  - pattern: "user-{n:03d}"
+    range: [1, 100]
+    gateway_port_start: 19000
+    bridge_port_start: 29000
+
+  # Another bulk range
+  # Creates: bot-101, bot-102, ... bot-500
+  - pattern: "bot-{n}"
+    range: [101, 500]
+    gateway_port_start: 19100
+    bridge_port_start: 29100
+
+  # List-based instances
+  - names:
+      - alpha
+      - beta
+      - gamma
+    gateway_port_start: 20000
+    bridge_port_start: 30000
