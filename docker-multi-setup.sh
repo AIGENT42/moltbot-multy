@@ -105,6 +105,58 @@ get_used_ports() {
   printf '%s\n' "${ports[@]}" | sort -n
 }
 
+get_all_used_ports() {
+  local ports=()
+  for env_file in "$INSTANCES_DIR"/*.env; do
+    [[ -f "$env_file" ]] || continue
+    local gw_port br_port
+    gw_port=$(grep "^CLAWDBOT_GATEWAY_PORT=" "$env_file" 2>/dev/null | cut -d= -f2)
+    br_port=$(grep "^CLAWDBOT_BRIDGE_PORT=" "$env_file" 2>/dev/null | cut -d= -f2)
+    [[ -n "$gw_port" ]] && ports+=("$gw_port")
+    [[ -n "$br_port" ]] && ports+=("$br_port")
+  done
+  printf '%s\n' "${ports[@]}" | sort -n
+}
+
+is_port_available() {
+  local port="$1"
+  local all_used="$2"
+
+  # Check if port is in our instances
+  if echo "$all_used" | grep -q "^${port}$"; then
+    return 1
+  fi
+
+  # Check if port is in use on the system
+  if ss -ltn 2>/dev/null | grep -q ":${port} "; then
+    return 1
+  fi
+
+  # Check if port is used by Docker
+  if docker ps --format '{{.Ports}}' 2>/dev/null | grep -q ":${port}->"; then
+    return 1
+  fi
+
+  return 0
+}
+
+find_next_available_port_pair() {
+  local base_port="$1"
+  local all_used
+  all_used=$(get_all_used_ports)
+
+  local port=$base_port
+  while true; do
+    local next_port=$((port + 1))
+    # Find a pair where both ports are available
+    if is_port_available "$port" "$all_used" && is_port_available "$next_port" "$all_used"; then
+      echo "$port"
+      return
+    fi
+    ((port++))
+  done
+}
+
 find_next_available_port() {
   local base_port="$1"
   local port_type="$2"
@@ -196,8 +248,15 @@ cmd_create() {
   fi
 
   # Auto-assign ports if not specified
-  [[ -z "$gateway_port" ]] && gateway_port=$(find_next_available_port "$DEFAULT_BASE_GATEWAY_PORT" "GATEWAY")
-  [[ -z "$bridge_port" ]] && bridge_port=$(find_next_available_port "$DEFAULT_BASE_BRIDGE_PORT" "BRIDGE")
+  # When both ports need auto-assignment, find a consecutive pair to avoid conflicts
+  if [[ -z "$gateway_port" ]] && [[ -z "$bridge_port" ]]; then
+    gateway_port=$(find_next_available_port_pair "$DEFAULT_BASE_GATEWAY_PORT")
+    bridge_port=$((gateway_port + 1))
+  elif [[ -z "$gateway_port" ]]; then
+    gateway_port=$(find_next_available_port "$DEFAULT_BASE_GATEWAY_PORT" "GATEWAY")
+  elif [[ -z "$bridge_port" ]]; then
+    bridge_port=$(find_next_available_port "$DEFAULT_BASE_BRIDGE_PORT" "BRIDGE")
+  fi
 
   # Set default directories
   [[ -z "$config_dir" ]] && config_dir="$HOME/.moltbot-${instance}"
@@ -416,8 +475,8 @@ cmd_onboard() {
 
 cmd_ports() {
   local next_gateway next_bridge
-  next_gateway=$(find_next_available_port "$DEFAULT_BASE_GATEWAY_PORT" "GATEWAY")
-  next_bridge=$(find_next_available_port "$DEFAULT_BASE_BRIDGE_PORT" "BRIDGE")
+  next_gateway=$(find_next_available_port_pair "$DEFAULT_BASE_GATEWAY_PORT")
+  next_bridge=$((next_gateway + 1))
 
   echo "Next available ports:"
   echo "  Gateway: $next_gateway"
