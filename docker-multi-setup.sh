@@ -87,7 +87,10 @@ load_instance_env() {
     exit 1
   fi
   # shellcheck disable=SC1090
+  # Use set -a to auto-export variables so Docker Compose can read them
+  set -a
   source "$env_file"
+  set +a
 }
 
 get_used_ports() {
@@ -256,7 +259,10 @@ EOF
     echo "  - Install Gateway daemon: No"
     echo ""
     # shellcheck disable=SC1090
+    # Use set -a to auto-export variables so Docker Compose can read them
+    set -a
     source "$env_file"
+    set +a
     docker compose -f "$COMPOSE_FILE" --project-name "moltbot-${instance}" run --rm moltbot-cli onboard --no-install-daemon
   fi
 
