@@ -266,9 +266,15 @@ cmd_create() {
   local token
   token=$(generate_token)
 
-  # Create directories
+  # Create directories with proper ownership for the 'node' user (uid 1000)
+  # The Docker container runs as 'node' (uid 1000:1000) for security,
+  # so mounted volumes must be writable by that user
   mkdir -p "$config_dir"
   mkdir -p "$workspace_dir"
+
+  # Set ownership to node user (uid 1000, gid 1000) so container can write
+  chown -R 1000:1000 "$config_dir"
+  chown -R 1000:1000 "$workspace_dir"
 
   # Save instance configuration
   local env_file
