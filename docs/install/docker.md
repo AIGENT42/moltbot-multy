@@ -210,6 +210,117 @@ pnpm test:docker:qr
 - Gateway bind defaults to `lan` for container use.
 - The gateway container is the source of truth for sessions (`~/.clawdbot/agents/<agentId>/sessions/`).
 
+## Multi-Instance Setup
+
+Run multiple Moltbot gateway instances on the same host, each with isolated ports, config, and workspace directories.
+
+### Quick start (multi-instance)
+
+```bash
+# Create first instance (auto-assigns ports 18789/18790)
+./docker-multi-setup.sh create bot1
+
+# Create second instance (auto-assigns next available ports)
+./docker-multi-setup.sh create bot2
+
+# Create with specific ports
+./docker-multi-setup.sh create bot3 --gateway-port 18793 --bridge-port 18794
+```
+
+### Instance management
+
+```bash
+# List all instances with ports and status
+./docker-multi-setup.sh list
+
+# Show next available ports
+./docker-multi-setup.sh ports
+
+# Start/stop instances
+./docker-multi-setup.sh start bot1
+./docker-multi-setup.sh stop bot1
+
+# View logs
+./docker-multi-setup.sh logs bot1 -f
+
+# Run CLI commands
+./docker-multi-setup.sh cli bot1 channels status
+./docker-multi-setup.sh cli bot1 health --token "<token>"
+
+# Remove instance (keeps data directories)
+./docker-multi-setup.sh remove bot1
+```
+
+### Port management
+
+Each instance automatically gets unique ports:
+- Gateway port: starts at 18789, increments for each instance
+- Bridge port: starts at 18790, increments for each instance
+
+You can also specify ports explicitly:
+
+```bash
+./docker-multi-setup.sh create mybot --gateway-port 19000 --bridge-port 19001
+```
+
+### Instance data
+
+Each instance stores its data separately:
+- Config: `~/.clawdbot-<instance>/`
+- Workspace: `~/clawd-<instance>/`
+- Token: stored in `.instances/<instance>.env`
+
+Custom directories:
+
+```bash
+./docker-multi-setup.sh create mybot \
+  --config-dir /data/moltbot/mybot/config \
+  --workspace-dir /data/moltbot/mybot/workspace
+```
+
+### Provider setup (per instance)
+
+Configure providers for each instance:
+
+```bash
+# WhatsApp (QR)
+./docker-multi-setup.sh cli bot1 channels login
+
+# Telegram
+./docker-multi-setup.sh cli bot1 channels add --channel telegram --token "<token>"
+
+# Discord
+./docker-multi-setup.sh cli bot1 channels add --channel discord --token "<token>"
+```
+
+### Instance status
+
+```bash
+# List all instances
+./docker-multi-setup.sh list
+
+# Detailed status for one instance
+./docker-multi-setup.sh status bot1
+```
+
+Example output:
+```
+INSTANCE        GATEWAY      BRIDGE       STATUS     CONFIG
+--------        -------      ------       ------     ------
+bot1            18789        18790        running    /home/user/.clawdbot-bot1
+bot2            18791        18792        running    /home/user/.clawdbot-bot2
+bot3            18793        18794        stopped    /home/user/.clawdbot-bot3
+```
+
+### Skip onboarding
+
+For automated deployments, skip interactive onboarding:
+
+```bash
+./docker-multi-setup.sh create bot1 --no-onboard
+./docker-multi-setup.sh onboard bot1  # Run later if needed
+```
+
 ## Agent Sandbox (host gateway + Docker tools)
 
 Deep dive: [Sandboxing](/gateway/sandboxing)

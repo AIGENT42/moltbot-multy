@@ -46,3 +46,6 @@ Swabble/
 Core/
 Users/
 vendor/
+
+# Multi-instance config
+.instances/
