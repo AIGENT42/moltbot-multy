@@ -359,33 +359,39 @@ defaults:
   config_base: /data/moltbot/config
   workspace_base: /data/moltbot/workspace
   ports:
-    gateway_start: 18789
+    gateway_start: 18789  # Auto-increments from here
     bridge_start: 28789
   resources:
     memory: 512m
     cpus: 0.5
-    pids_limit: 100
 
 instances:
-  # Individual instances
-  - name: admin
-    gateway_port: 18789
+  # Simplest: just specify count (creates instance-1 through instance-1000)
+  - count: 1000
+
+  # Or with custom prefix (creates user-1 through user-1000)
+  - prefix: user
+    count: 1000
+
+  # Pattern with zero-padding (creates bot-001 through bot-500)
+  - pattern: "bot-{n:03d}"
+    range: [1, 500]
+
+  # Different resource tiers
+  - prefix: premium
+    count: 100
     resources:
       memory: 1g
       cpus: 1
 
-  # Bulk range: creates user-001 through user-500
-  - pattern: "user-{n:03d}"
-    range: [1, 500]
-    gateway_port_start: 19000
-    bridge_port_start: 29000
-
-  # Another range: bot-501 through bot-1000
-  - pattern: "bot-{n}"
-    range: [501, 1000]
-    gateway_port_start: 19500
-    bridge_port_start: 29500
+  - prefix: basic
+    count: 900
+    resources:
+      memory: 256m
+      cpus: 0.25
 ```
+
+Ports are **auto-allocated sequentially** - no need to specify port numbers.
 
 ### Resource limits
 

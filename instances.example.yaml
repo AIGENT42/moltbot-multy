@@ -1,69 +1,65 @@
 # Multi-instance configuration for Moltbot
 # Copy this file to instances.yaml and customize
 #
+# Ports are AUTO-ALLOCATED sequentially starting from defaults.ports
+# No need to specify any port numbers!
+#
 # Usage:
 #   ./docker-multi-bulk.sh generate   # Generate from this config
 #   ./docker-multi-bulk.sh up         # Start all instances
 #   ./docker-multi-bulk.sh down       # Stop all instances
 #   ./docker-multi-bulk.sh status     # Show all instance status
 
-# Global defaults (can be overridden per instance)
+# Global defaults
 defaults:
   # Base directories - instance name appended automatically
   config_base: /data/moltbot/config
   workspace_base: /data/moltbot/workspace
 
-  # Port allocation strategy
+  # Starting ports (auto-increment from here)
   ports:
-    gateway_start: 18789
-    bridge_start: 28789
+    gateway_start: 18789  # First instance gets 18789, second 18790, etc.
+    bridge_start: 28789   # First instance gets 28789, second 28790, etc.
 
-  # Resource limits per container
+  # Default resource limits per container
   resources:
     memory: 512m
     memory_swap: 1g
     cpus: 0.5
     pids_limit: 100
 
-  # Docker settings
-  docker:
-    image: moltbot:local
-    network: moltbot-network
-    restart: unless-stopped
-
 # Instance definitions
-# For bulk creation, use ranges or lists
+# Ports are auto-allocated in order of definition
 instances:
-  # Individual instances with custom settings
-  - name: admin
-    gateway_port: 18789
-    bridge_port: 28789
+  # === SIMPLE: Just specify count ===
+  # Creates: instance-1, instance-2, ... instance-1000
+  - count: 1000
+
+  # === OR with custom prefix ===
+  # Creates: user-1, user-2, ... user-1000
+  - prefix: user
+    count: 1000
+
+  # === OR use pattern with range ===
+  # Creates: bot-001, bot-002, ... bot-500 (with zero-padding)
+  - pattern: "bot-{n:03d}"
+    range: [1, 500]
+
+  # === OR list specific names ===
+  - names:
+      - admin
+      - support
+      - testing
+
+  # === With custom resources ===
+  - prefix: premium
+    count: 100
     resources:
       memory: 1g
       cpus: 1
 
-  - name: premium-user-1
-    gateway_port: 18790
-    bridge_port: 28790
-
-  # Bulk instances using range pattern
-  # Creates: user-001, user-002, ... user-100
-  - pattern: "user-{n:03d}"
-    range: [1, 100]
-    gateway_port_start: 19000
-    bridge_port_start: 29000
-
-  # Another bulk range
-  # Creates: bot-101, bot-102, ... bot-500
-  - pattern: "bot-{n}"
-    range: [101, 500]
-    gateway_port_start: 19100
-    bridge_port_start: 29100
-
-  # List-based instances
-  - names:
-      - alpha
-      - beta
-      - gamma
-    gateway_port_start: 20000
-    bridge_port_start: 30000
+  - prefix: basic
+    count: 900
+    resources:
+      memory: 256m
+      cpus: 0.25

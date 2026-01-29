@@ -125,8 +125,8 @@ instances_config = config.get("instances", [])
 # Extract defaults
 config_base = defaults.get("config_base", os.path.expanduser("~/.clawdbot"))
 workspace_base = defaults.get("workspace_base", os.path.expanduser("~/clawd"))
-gateway_start = defaults.get("ports", {}).get("gateway_start", 18789)
-bridge_start = defaults.get("ports", {}).get("bridge_start", 28789)
+gateway_base = defaults.get("ports", {}).get("gateway_start", 18789)
+bridge_base = defaults.get("ports", {}).get("bridge_start", 28789)
 default_resources = defaults.get("resources", {})
 docker_settings = defaults.get("docker", {})
 
@@ -134,56 +134,53 @@ def generate_token():
     return secrets.token_hex(32)
 
 def expand_instances(instances_config):
-    """Expand patterns and ranges into individual instance definitions"""
+    """Expand patterns and ranges into individual instance definitions (without ports)"""
     expanded = []
 
     for item in instances_config:
         if "name" in item:
             # Single instance
-            expanded.append(item)
+            expanded.append({"name": item["name"], "resources": item.get("resources", {})})
         elif "pattern" in item and "range" in item:
             # Range pattern: user-{n:03d} with range [1, 100]
             pattern = item["pattern"]
             start, end = item["range"]
-            gw_start = item.get("gateway_port_start", gateway_start)
-            br_start = item.get("bridge_port_start", bridge_start)
             resources = item.get("resources", {})
 
-            for i, n in enumerate(range(start, end + 1)):
+            for n in range(start, end + 1):
                 name = pattern.format(n=n)
-                expanded.append({
-                    "name": name,
-                    "gateway_port": gw_start + i,
-                    "bridge_port": br_start + i,
-                    "resources": resources
-                })
+                expanded.append({"name": name, "resources": resources})
         elif "names" in item:
             # List of names
             names = item["names"]
-            gw_start = item.get("gateway_port_start", gateway_start)
-            br_start = item.get("bridge_port_start", bridge_start)
             resources = item.get("resources", {})
 
-            for i, name in enumerate(names):
-                expanded.append({
-                    "name": name,
-                    "gateway_port": gw_start + i,
-                    "bridge_port": br_start + i,
-                    "resources": resources
-                })
+            for name in names:
+                expanded.append({"name": name, "resources": resources})
+        elif "count" in item:
+            # Simple count: creates instance-1, instance-2, etc.
+            prefix = item.get("prefix", "instance")
+            count = item["count"]
+            resources = item.get("resources", {})
+
+            for n in range(1, count + 1):
+                name = f"{prefix}-{n}"
+                expanded.append({"name": name, "resources": resources})
 
     return expanded
 
 instances = expand_instances(instances_config)
 print(f"Generating {len(instances)} instance configurations...")
+print(f"Auto-allocating ports: gateway {gateway_base}-{gateway_base + len(instances) - 1}, bridge {bridge_base}-{bridge_base + len(instances) - 1}")
 
 if not dry_run:
     instances_dir.mkdir(parents=True, exist_ok=True)
 
-for inst in instances:
+# Auto-allocate ports sequentially
+for idx, inst in enumerate(instances):
     name = inst["name"]
-    gw_port = inst.get("gateway_port", gateway_start)
-    br_port = inst.get("bridge_port", bridge_start)
+    gw_port = gateway_base + idx
+    br_port = bridge_base + idx
     resources = {**default_resources, **inst.get("resources", {})}
 
     config_dir = f"{config_base}/{name}"
@@ -217,7 +214,8 @@ CLAWDBOT_PIDS_LIMIT={resources.get('pids_limit', '100')}
         Path(config_dir).mkdir(parents=True, exist_ok=True)
         Path(workspace_dir).mkdir(parents=True, exist_ok=True)
 
-        print(f"  Created: {name} (gateway:{gw_port}, bridge:{br_port})")
+        if (idx + 1) % 100 == 0:
+            print(f"  Created {idx + 1} / {len(instances)} instances...")
 
 print(f"\nGenerated {len(instances)} instances")
 if not dry_run:
