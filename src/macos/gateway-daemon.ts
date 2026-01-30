@@ -43,6 +43,7 @@ async function main() {
 
   const [
     { loadConfig },
+    { resolveGatewayPort },
     { startGatewayServer },
     { setGatewayWsLogStyle },
     { setVerbose },
@@ -52,6 +53,7 @@ async function main() {
     { enableConsoleCapture, setConsoleTimestampPrefix },
   ] = await Promise.all([
     import("../config/config.js"),
+    import("../config/paths.js"),
     import("../gateway/server.js"),
     import("../gateway/ws-logging.js"),
     import("../globals.js"),
@@ -76,8 +78,7 @@ async function main() {
   const portRaw =
     argValue(args, "--port") ??
     process.env.CLAWDBOT_GATEWAY_PORT ??
-    (typeof cfg.gateway?.port === "number" ? String(cfg.gateway.port) : "") ??
-    "18789";
+    String(resolveGatewayPort(cfg));
   const port = Number.parseInt(portRaw, 10);
   if (Number.isNaN(port) || port <= 0) {
     defaultRuntime.error(`Invalid --port (${portRaw})`);

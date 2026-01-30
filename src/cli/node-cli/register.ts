@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { DEFAULT_GATEWAY_PORT } from "../../config/paths.js";
 import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
 import { loadNodeHostConfig } from "../../node-host/config.js";
@@ -39,7 +40,10 @@ export function registerNodeCli(program: Command) {
       const existing = await loadNodeHostConfig();
       const host =
         (opts.host as string | undefined)?.trim() || existing?.gateway?.host || "127.0.0.1";
-      const port = parsePortWithFallback(opts.port, existing?.gateway?.port ?? 18789);
+      const port = parsePortWithFallback(
+        opts.port,
+        existing?.gateway?.port ?? DEFAULT_GATEWAY_PORT,
+      );
       await runNodeHost({
         gatewayHost: host,
         gatewayPort: port,

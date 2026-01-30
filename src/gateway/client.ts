@@ -9,6 +9,7 @@ import {
   publicKeyRawBase64UrlFromPem,
   signDevicePayload,
 } from "../infra/device-identity.js";
+import { DEFAULT_GATEWAY_PORT } from "../config/paths.js";
 import {
   clearDeviceAuthToken,
   loadDeviceAuthToken,
@@ -100,7 +101,7 @@ export class GatewayClient {
 
   start() {
     if (this.closed) return;
-    const url = this.opts.url ?? "ws://127.0.0.1:18789";
+    const url = this.opts.url ?? `ws://127.0.0.1:${DEFAULT_GATEWAY_PORT}`;
     if (this.opts.tlsFingerprint && !url.startsWith("wss://")) {
       this.opts.onConnectError?.(new Error("gateway tls fingerprint requires wss:// gateway url"));
       return;

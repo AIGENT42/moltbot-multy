@@ -13,7 +13,7 @@ import { resolveNodeService } from "../../daemon/node-service.js";
 import type { GatewayServiceRuntime } from "../../daemon/service-runtime.js";
 import { isSystemdUserServiceAvailable } from "../../daemon/systemd.js";
 import { renderSystemdUnavailableHints } from "../../daemon/systemd-hints.js";
-import { resolveIsNixMode } from "../../config/paths.js";
+import { DEFAULT_GATEWAY_PORT, resolveIsNixMode } from "../../config/paths.js";
 import { isWSL } from "../../infra/wsl.js";
 import { loadNodeHostConfig } from "../../node-host/config.js";
 import { defaultRuntime } from "../../runtime.js";
@@ -91,7 +91,7 @@ function resolveNodeDefaults(
   if (opts.port !== undefined && portOverride === null) {
     return { host, port: null };
   }
-  const port = portOverride ?? config?.gateway?.port ?? 18789;
+  const port = portOverride ?? config?.gateway?.port ?? DEFAULT_GATEWAY_PORT;
   return { host, port };
 }
 
@@ -180,7 +180,7 @@ export async function runNodeDaemonInstall(opts: NodeDaemonInstallOptions) {
     await buildNodeInstallPlan({
       env: process.env,
       host,
-      port: port ?? 18789,
+      port: port ?? DEFAULT_GATEWAY_PORT,
       tls,
       tlsFingerprint: tlsFingerprint || undefined,
       nodeId: opts.nodeId,
